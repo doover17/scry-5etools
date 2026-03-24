@@ -484,6 +484,9 @@
 		gap: 6px;
 
 		&__item {
+			display: flex;
+			align-items: baseline;
+			gap: 6px;
 			padding: 6px 8px;
 			font-size: 12px;
 			border-radius: var(--wt-border-radius);
@@ -491,7 +494,7 @@
 			background: var(--wt-bg-alt);
 			color: var(--wt-text);
 
-			&--ok {
+			&--good {
 				border-left-color: var(--wt-success);
 			}
 
@@ -499,13 +502,18 @@
 				border-left-color: var(--wt-warning);
 			}
 
-			&--danger {
-				border-left-color: var(--wt-danger);
-			}
-
 			&--info {
 				border-left-color: var(--wt-info);
 			}
+
+			&--tip {
+				border-left-color: var(--wt-accent);
+			}
+		}
+
+		&__icon {
+			flex-shrink: 0;
+			font-size: 13px;
 		}
 
 		&__title {

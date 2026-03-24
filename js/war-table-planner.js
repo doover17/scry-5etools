@@ -92,6 +92,10 @@ globalThis.WarTablePlanner = class {
 		this._$wrpSlots = this._renderSlotSection();
 		$wrp.appendChild(this._$wrpSlots);
 
+		// Analysis feedback section
+		this._$wrpAnalysis = this._renderAnalysisSection();
+		$wrp.appendChild(this._$wrpAnalysis);
+
 		$parent.appendChild($wrp);
 
 		// Listen for state changes
@@ -100,15 +104,18 @@ globalThis.WarTablePlanner = class {
 			this._updateSpellListDisplay();
 			this._updatePreparedDisplay();
 			this._updateProfileDisplay();
+			this._updateAnalysisDisplay();
 		});
 
 		this._state.on("preparedSpellsChange", () => {
 			this._updateSpellListDisplay();
 			this._updatePreparedDisplay();
+			this._updateAnalysisDisplay();
 		});
 
 		this._state.on("slotsChange", () => {
 			this._updateSlotDisplay();
+			this._updateAnalysisDisplay();
 		});
 
 		this._state.on("abeyanceChange", () => {
@@ -117,6 +124,11 @@ globalThis.WarTablePlanner = class {
 
 		this._state.on("modeChange", () => {
 			this._updateSlotDisplay();
+			this._updateAnalysisDisplay();
+		});
+
+		this._state.on("forecastChange", () => {
+			this._updateAnalysisDisplay();
 		});
 
 		this._state.on("stateChange", () => {
@@ -130,6 +142,7 @@ globalThis.WarTablePlanner = class {
 		this._updateSpellListDisplay();
 		this._updatePreparedDisplay();
 		this._updateSlotDisplay();
+		this._updateAnalysisDisplay();
 	}
 
 	// -- Character Profile ---------------------------------------------------
@@ -519,6 +532,178 @@ globalThis.WarTablePlanner = class {
 				abeyanceContainer.style.display = "none";
 			}
 		}
+	}
+
+	// -- Analysis Feedback ----------------------------------------------------
+	_renderAnalysisSection () {
+		const section = this._makeSection("Loadout Analysis", true);
+		const content = section.querySelector(".wt-section__content");
+
+		const analysisWrp = document.createElement("div");
+		analysisWrp.className = "wt-analysis";
+		analysisWrp.dataset.analysisContainer = "";
+		content.appendChild(analysisWrp);
+
+		this._updateAnalysisDisplay(content);
+
+		return section;
+	}
+
+	_updateAnalysisDisplay (container) {
+		const root = container || this._$wrpAnalysis?.querySelector(".wt-section__content");
+		if (!root) return;
+
+		const el = root.querySelector("[data-analysis-container]");
+		if (!el) return;
+
+		const insights = this._computeAnalysis();
+		if (insights.length === 0) {
+			el.innerHTML = `<div class="wt-prepared__empty">Prepare some spells to see analysis.</div>`;
+			return;
+		}
+
+		el.innerHTML = insights.map(insight => {
+			const iconMap = {info: "&#9432;", warn: "&#9888;", good: "&#10003;", tip: "&#9733;"};
+			return `<div class="wt-analysis__item wt-analysis__item--${insight.type}">
+				<span class="wt-analysis__icon">${iconMap[insight.type] || ""}</span>
+				<span>${insight.text}</span>
+			</div>`;
+		}).join("");
+	}
+
+	_computeAnalysis () {
+		const insights = [];
+		const character = this._state.getCharacter();
+		const prepared = this._state.getPreparedSpells();
+		const slots = this._state.getSpellSlots();
+		const maxPrep = this._state.getMaxPreparedSpells();
+		const forecast = this._state.getForecast();
+		const mode = this._state.getMode();
+
+		if (prepared.length === 0) return insights;
+
+		// -- Prepared count warnings --
+		if (maxPrep !== null) {
+			if (prepared.length > maxPrep) {
+				insights.push({type: "warn", text: `Over-prepared: ${prepared.length}/${maxPrep} spells. Remove ${prepared.length - maxPrep} spell(s).`});
+			} else if (prepared.length < maxPrep) {
+				insights.push({type: "tip", text: `${maxPrep - prepared.length} preparation slot(s) unused. Consider filling them.`});
+			} else {
+				insights.push({type: "good", text: `Preparation slots fully used (${maxPrep}/${maxPrep}).`});
+			}
+		}
+
+		// -- Concentration count --
+		const concSpells = prepared.filter(sp => this._isConcentration(sp));
+		if (concSpells.length === 0 && prepared.some(sp => sp.level > 0)) {
+			insights.push({type: "warn", text: "No concentration spells prepared. Consider adding one for sustained value."});
+		} else if (concSpells.length > 0) {
+			const ratio = concSpells.length / Math.max(1, prepared.filter(sp => sp.level > 0).length);
+			if (ratio > 0.6) {
+				insights.push({type: "warn", text: `${concSpells.length} of ${prepared.filter(sp => sp.level > 0).length} leveled spells require concentration. You can only maintain one at a time.`});
+			} else {
+				insights.push({type: "info", text: `${concSpells.length} concentration spell(s) prepared.`});
+			}
+		}
+
+		// -- Spell level coverage --
+		const levelCounts = {};
+		for (const sp of prepared) {
+			levelCounts[sp.level] = (levelCounts[sp.level] || 0) + 1;
+		}
+
+		// Check for unused slot levels
+		const unusedLevels = [];
+		for (let i = 0; i < 9; i++) {
+			if (slots.max[i] > 0 && !levelCounts[i + 1]) {
+				unusedLevels.push(i + 1);
+			}
+		}
+		if (unusedLevels.length > 0) {
+			insights.push({type: "tip", text: `No spells prepared at level ${unusedLevels.join(", ")}. You have slots available at ${unusedLevels.length === 1 ? "this level" : "these levels"}.`});
+		}
+
+		// -- Cantrip check --
+		const cantripCount = levelCounts[0] || 0;
+		if (cantripCount === 0) {
+			insights.push({type: "tip", text: "No cantrips prepared. Cantrips are your free at-will damage/utility."});
+		}
+
+		// -- Slot budget analysis (planning mode) --
+		if (mode === "planning") {
+			const totalSlots = slots.max.reduce((s, v) => s + v, 0);
+			const leveledPrepared = prepared.filter(sp => sp.level > 0).length;
+
+			if (totalSlots > 0 && leveledPrepared > 0) {
+				const budgetNotes = this._getSlotBudgetNotes(totalSlots, forecast);
+				if (budgetNotes) insights.push(budgetNotes);
+			}
+		}
+
+		// -- Live mode: remaining slot analysis --
+		if (mode === "live") {
+			const totalRemaining = slots.current.reduce((s, v) => s + v, 0);
+			const totalMax = slots.max.reduce((s, v) => s + v, 0);
+			const pctUsed = totalMax > 0 ? ((totalMax - totalRemaining) / totalMax) : 0;
+
+			if (totalRemaining === 0) {
+				insights.push({type: "warn", text: "All spell slots expended. Rely on cantrips until rest."});
+			} else if (pctUsed > 0.75) {
+				insights.push({type: "warn", text: `${totalRemaining}/${totalMax} slots remaining (${Math.round(pctUsed * 100)}% used). Conserve resources.`});
+			} else if (pctUsed > 0.5) {
+				insights.push({type: "info", text: `${totalRemaining}/${totalMax} slots remaining. Pace yourself.`});
+			}
+		}
+
+		// -- Ritual spells hint --
+		const rituals = prepared.filter(sp => this._isRitual(sp));
+		if (rituals.length > 0 && character.className === "Wizard") {
+			insights.push({type: "info", text: `${rituals.length} ritual(s) prepared. Wizards can cast rituals without expending slots.`});
+		}
+
+		return insights;
+	}
+
+	_getSlotBudgetNotes (totalSlots, forecast) {
+		// Estimate session slot budget by intensity + rest availability
+		let budgetMultiplier = 1;
+		let intensityLabel = "moderate";
+
+		switch (forecast.combatIntensity) {
+			case "light": budgetMultiplier = 0.5; intensityLabel = "light"; break;
+			case "moderate": budgetMultiplier = 1; intensityLabel = "moderate"; break;
+			case "heavy": budgetMultiplier = 1.5; intensityLabel = "heavy"; break;
+		}
+
+		let restNote = "";
+		switch (forecast.restAvailability) {
+			case "longRest": restNote = "Full recovery expected."; break;
+			case "shortRests": restNote = "Short rests available (Warlocks benefit)."; break;
+			case "noRests": restNote = "No rests — budget every slot carefully."; budgetMultiplier *= 1.3; break;
+		}
+
+		const estimatedNeed = Math.ceil(totalSlots * budgetMultiplier);
+		if (estimatedNeed > totalSlots) {
+			return {type: "warn", text: `${intensityLabel.charAt(0).toUpperCase() + intensityLabel.slice(1)} session with ${forecast.restAvailability === "noRests" ? "no rests" : "limited rests"}: you may run short on slots. ${restNote}`};
+		}
+		return {type: "info", text: `Session forecast: ${intensityLabel} intensity. ${restNote}`};
+	}
+
+	// -- Spell property lookups (from loaded spell data) ---------------------
+	_isConcentration (preparedSpell) {
+		const sp = this._findSpellData(preparedSpell);
+		return sp?.duration?.some(d => d.concentration === true) ?? false;
+	}
+
+	_isRitual (preparedSpell) {
+		const sp = this._findSpellData(preparedSpell);
+		return sp?.meta?.ritual === true;
+	}
+
+	_findSpellData (preparedSpell) {
+		return this._allSpells.find(
+			sp => sp.name === preparedSpell.name && sp.source === preparedSpell.source,
+		);
 	}
 
 	// -- Utility: collapsible section ----------------------------------------
