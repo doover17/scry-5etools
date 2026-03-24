@@ -1,0 +1,974 @@
+// [PERSONAL] DH 2026-03-24 — War Table styles
+// All styles for the War Table sidebar and standalone page.
+
+@use "../vars/vars";
+@use "../vars/vars-night";
+
+@layer vetools {
+	// ========================================================================
+	// CSS custom properties for War Table
+	// ========================================================================
+	:root {
+		--wt-sidebar-width: 400px;
+		--wt-toggle-width: 28px;
+		--wt-gap: 8px;
+		--wt-pad: 12px;
+		--wt-border-radius: 4px;
+		--wt-transition: 0.25s ease;
+
+		// Colors — light mode
+		--wt-bg: rgb(#{vars.$rgb-bg});
+		--wt-bg-alt: rgb(#{vars.$rgb-bg--alt});
+		--wt-text: rgb(#{vars.$rgb-font});
+		--wt-text-muted: rgb(#{vars.$rgb-font--muted});
+		--wt-border: rgba(0, 0, 0, 0.15);
+		--wt-accent: #4a6da7;
+		--wt-accent-light: #6b8fc4;
+		--wt-danger: #a74a4a;
+		--wt-success: #4aa75a;
+		--wt-warning: #c49b3c;
+		--wt-info: #4a8fa7;
+
+		// Slot pip colors
+		--wt-pip-filled: var(--wt-accent);
+		--wt-pip-empty: rgba(0, 0, 0, 0.12);
+		--wt-pip-expended: rgba(0, 0, 0, 0.05);
+	}
+
+	// Night mode overrides
+	:root.ve-night-mode {
+		--wt-bg: rgb(#{vars-night.$rgb-bg--night});
+		--wt-bg-alt: rgb(#{vars-night.$rgb-bg--alt-night});
+		--wt-text: rgb(#{vars-night.$rgb-font--night});
+		--wt-text-muted: rgba(#{vars-night.$rgb-font--night}, 0.6);
+		--wt-border: rgba(255, 255, 255, 0.12);
+		--wt-accent: #6b8fc4;
+		--wt-accent-light: #8badd6;
+		--wt-danger: #c46b6b;
+		--wt-success: #6bc47a;
+		--wt-warning: #d6b35c;
+		--wt-info: #6bb5c4;
+
+		--wt-pip-filled: var(--wt-accent);
+		--wt-pip-empty: rgba(255, 255, 255, 0.1);
+		--wt-pip-expended: rgba(255, 255, 255, 0.04);
+	}
+
+	// ========================================================================
+	// Sidebar container (overlay mode)
+	// ========================================================================
+	.wt-sidebar {
+		position: fixed;
+		top: 0;
+		right: 0;
+		width: var(--wt-sidebar-width);
+		height: 100vh;
+		z-index: 1000;
+		background: var(--wt-bg);
+		border-left: 1px solid var(--wt-border);
+		box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+		transform: translateX(100%);
+		transition: transform var(--wt-transition);
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+
+		&--open {
+			transform: translateX(0);
+		}
+	}
+
+	// Toggle button (fixed to screen edge)
+	.wt-toggle-btn {
+		position: fixed;
+		top: 50%;
+		right: 0;
+		transform: translateY(-50%);
+		z-index: 1001;
+		width: var(--wt-toggle-width);
+		height: 80px;
+		background: var(--wt-accent);
+		color: #fff;
+		border: none;
+		border-radius: var(--wt-border-radius) 0 0 var(--wt-border-radius);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 14px;
+		writing-mode: vertical-rl;
+		text-orientation: mixed;
+		letter-spacing: 1px;
+		transition: right var(--wt-transition), background 0.15s;
+
+		&:hover {
+			background: var(--wt-accent-light);
+		}
+
+		&--shifted {
+			right: var(--wt-sidebar-width);
+		}
+	}
+
+	// ========================================================================
+	// Sidebar header
+	// ========================================================================
+	.wt-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--wt-pad);
+		border-bottom: 1px solid var(--wt-border);
+		flex-shrink: 0;
+
+		&__title {
+			font-size: 16px;
+			font-weight: 700;
+			color: var(--wt-text);
+			margin: 0;
+		}
+
+		&__controls {
+			display: flex;
+			gap: 6px;
+			align-items: center;
+		}
+	}
+
+	// Mode toggle (planning / live)
+	.wt-mode-toggle {
+		display: inline-flex;
+		border-radius: var(--wt-border-radius);
+		overflow: hidden;
+		border: 1px solid var(--wt-border);
+
+		&__btn {
+			padding: 3px 10px;
+			font-size: 12px;
+			border: none;
+			background: transparent;
+			color: var(--wt-text-muted);
+			cursor: pointer;
+			transition: background 0.15s, color 0.15s;
+
+			&--active {
+				background: var(--wt-accent);
+				color: #fff;
+			}
+		}
+	}
+
+	// ========================================================================
+	// Sidebar body (scrollable)
+	// ========================================================================
+	.wt-body {
+		flex: 1;
+		overflow-y: auto;
+		padding: var(--wt-pad);
+		display: flex;
+		flex-direction: column;
+		gap: var(--wt-gap);
+	}
+
+	// ========================================================================
+	// Collapsible section (used for all panels)
+	// ========================================================================
+	.wt-section {
+		border: 1px solid var(--wt-border);
+		border-radius: var(--wt-border-radius);
+		background: var(--wt-bg);
+		overflow: hidden;
+
+		&__header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 8px var(--wt-pad);
+			cursor: pointer;
+			user-select: none;
+			background: var(--wt-bg-alt);
+			border-bottom: 1px solid var(--wt-border);
+			transition: background 0.15s;
+
+			&:hover {
+				filter: brightness(0.97);
+			}
+		}
+
+		&__title {
+			font-size: 13px;
+			font-weight: 600;
+			color: var(--wt-text);
+			margin: 0;
+		}
+
+		&__chevron {
+			font-size: 11px;
+			color: var(--wt-text-muted);
+			transition: transform 0.2s;
+		}
+
+		&__content {
+			padding: var(--wt-pad);
+			display: none;
+		}
+
+		&--open &__content {
+			display: block;
+		}
+
+		&--open &__chevron {
+			transform: rotate(180deg);
+		}
+	}
+
+	// ========================================================================
+	// Character profile form
+	// ========================================================================
+	.wt-profile {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 6px;
+
+		&__field {
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+
+			&--full {
+				grid-column: 1 / -1;
+			}
+		}
+
+		&__label {
+			font-size: 11px;
+			font-weight: 600;
+			color: var(--wt-text-muted);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+
+		&__input,
+		&__select {
+			padding: 4px 8px;
+			font-size: 13px;
+			border: 1px solid var(--wt-border);
+			border-radius: var(--wt-border-radius);
+			background: var(--wt-bg);
+			color: var(--wt-text);
+
+			&:focus {
+				outline: none;
+				border-color: var(--wt-accent);
+			}
+		}
+	}
+
+	// Feature checkboxes row
+	.wt-features {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 6px;
+
+		&__item {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			font-size: 12px;
+			color: var(--wt-text);
+			cursor: pointer;
+
+			input[type="checkbox"] {
+				accent-color: var(--wt-accent);
+			}
+		}
+	}
+
+	// ========================================================================
+	// Spell list panel
+	// ========================================================================
+	.wt-spell-list {
+		&__search {
+			width: 100%;
+			padding: 4px 8px;
+			font-size: 13px;
+			border: 1px solid var(--wt-border);
+			border-radius: var(--wt-border-radius);
+			background: var(--wt-bg);
+			color: var(--wt-text);
+			margin-bottom: 6px;
+
+			&:focus {
+				outline: none;
+				border-color: var(--wt-accent);
+			}
+		}
+
+		&__items {
+			max-height: 200px;
+			overflow-y: auto;
+			border: 1px solid var(--wt-border);
+			border-radius: var(--wt-border-radius);
+		}
+
+		&__item {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 3px 8px;
+			font-size: 12px;
+			color: var(--wt-text);
+			cursor: pointer;
+			transition: background 0.1s;
+
+			&:hover {
+				background: var(--wt-bg-alt);
+			}
+
+			&--prepared {
+				background: rgba(74, 109, 167, 0.08);
+			}
+		}
+
+		&__level-badge {
+			display: inline-block;
+			min-width: 18px;
+			text-align: center;
+			padding: 1px 4px;
+			font-size: 10px;
+			font-weight: 700;
+			border-radius: 3px;
+			background: var(--wt-accent);
+			color: #fff;
+			margin-right: 6px;
+			flex-shrink: 0;
+
+			&--cantrip {
+				background: var(--wt-text-muted);
+			}
+		}
+	}
+
+	// Prepared spells section
+	.wt-prepared {
+		&__header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 6px;
+
+			&-count {
+				font-size: 12px;
+				color: var(--wt-text-muted);
+			}
+		}
+
+		&__list {
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+		}
+
+		&__item {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 3px 8px;
+			font-size: 12px;
+			color: var(--wt-text);
+			border: 1px solid var(--wt-border);
+			border-radius: var(--wt-border-radius);
+
+			&-remove {
+				background: none;
+				border: none;
+				color: var(--wt-danger);
+				cursor: pointer;
+				font-size: 14px;
+				padding: 0 2px;
+				line-height: 1;
+			}
+		}
+
+		&__empty {
+			font-size: 12px;
+			color: var(--wt-text-muted);
+			font-style: italic;
+			padding: 4px 0;
+		}
+	}
+
+	// ========================================================================
+	// Slot resource bar
+	// ========================================================================
+	.wt-slots {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+
+		&__row {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		&__label {
+			font-size: 11px;
+			font-weight: 700;
+			color: var(--wt-text-muted);
+			min-width: 18px;
+			text-align: right;
+		}
+
+		&__pips {
+			display: flex;
+			gap: 3px;
+		}
+
+		&__pip {
+			width: 16px;
+			height: 16px;
+			border-radius: 3px;
+			border: 1px solid var(--wt-border);
+			transition: background 0.15s;
+
+			&--filled {
+				background: var(--wt-pip-filled);
+				border-color: var(--wt-pip-filled);
+			}
+
+			&--empty {
+				background: var(--wt-pip-empty);
+			}
+
+			&--expended {
+				background: var(--wt-pip-expended);
+				border-style: dashed;
+			}
+		}
+
+		// Live mode: pips are clickable
+		&--live &__pip {
+			cursor: pointer;
+
+			&:hover {
+				filter: brightness(1.15);
+			}
+		}
+
+		&__abeyance {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 4px 8px;
+			font-size: 12px;
+			border: 1px dashed var(--wt-accent);
+			border-radius: var(--wt-border-radius);
+			color: var(--wt-text);
+			margin-top: 2px;
+
+			&-label {
+				font-weight: 600;
+				color: var(--wt-accent);
+			}
+		}
+	}
+
+	// ========================================================================
+	// Analysis feedback panel
+	// ========================================================================
+	.wt-analysis {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+
+		&__item {
+			padding: 6px 8px;
+			font-size: 12px;
+			border-radius: var(--wt-border-radius);
+			border-left: 3px solid var(--wt-border);
+			background: var(--wt-bg-alt);
+			color: var(--wt-text);
+
+			&--ok {
+				border-left-color: var(--wt-success);
+			}
+
+			&--warn {
+				border-left-color: var(--wt-warning);
+			}
+
+			&--danger {
+				border-left-color: var(--wt-danger);
+			}
+
+			&--info {
+				border-left-color: var(--wt-info);
+			}
+		}
+
+		&__title {
+			font-weight: 600;
+			margin-bottom: 2px;
+		}
+
+		&__detail {
+			color: var(--wt-text-muted);
+		}
+	}
+
+	// Coverage checklist
+	.wt-coverage {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 3px;
+
+		&__item {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			font-size: 11px;
+			color: var(--wt-text);
+
+			&--empty {
+				color: var(--wt-danger);
+				font-weight: 600;
+			}
+		}
+
+		&__count {
+			font-weight: 700;
+			min-width: 14px;
+			text-align: center;
+		}
+	}
+
+	// ========================================================================
+	// Forecast inputs
+	// ========================================================================
+	.wt-forecast {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 6px;
+
+		&__field {
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+		}
+
+		&__label {
+			font-size: 11px;
+			font-weight: 600;
+			color: var(--wt-text-muted);
+			text-transform: uppercase;
+		}
+
+		&__select {
+			padding: 4px 6px;
+			font-size: 12px;
+			border: 1px solid var(--wt-border);
+			border-radius: var(--wt-border-radius);
+			background: var(--wt-bg);
+			color: var(--wt-text);
+		}
+	}
+
+	// ========================================================================
+	// Encounter builder
+	// ========================================================================
+	.wt-encounter {
+		border: 1px solid var(--wt-border);
+		border-radius: var(--wt-border-radius);
+		padding: var(--wt-pad);
+		margin-bottom: var(--wt-gap);
+
+		&__header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 6px;
+		}
+
+		&__name {
+			font-size: 13px;
+			font-weight: 600;
+			color: var(--wt-text);
+			border: none;
+			background: transparent;
+			padding: 2px 4px;
+
+			&:focus {
+				outline: none;
+				border-bottom: 1px solid var(--wt-accent);
+			}
+		}
+
+		&__remove {
+			background: none;
+			border: none;
+			color: var(--wt-danger);
+			cursor: pointer;
+			font-size: 14px;
+		}
+
+		&__monster-row {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 3px 0;
+			font-size: 12px;
+			color: var(--wt-text);
+		}
+
+		&__monster-count {
+			width: 36px;
+			padding: 2px 4px;
+			font-size: 12px;
+			border: 1px solid var(--wt-border);
+			border-radius: var(--wt-border-radius);
+			text-align: center;
+			background: var(--wt-bg);
+			color: var(--wt-text);
+		}
+
+		&__party-config {
+			display: flex;
+			gap: 8px;
+			margin-top: 6px;
+			padding-top: 6px;
+			border-top: 1px solid var(--wt-border);
+			font-size: 12px;
+
+			label {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				color: var(--wt-text-muted);
+			}
+
+			input {
+				width: 40px;
+				padding: 2px 4px;
+				border: 1px solid var(--wt-border);
+				border-radius: var(--wt-border-radius);
+				text-align: center;
+				font-size: 12px;
+				background: var(--wt-bg);
+				color: var(--wt-text);
+			}
+		}
+	}
+
+	// Action economy snapshot
+	.wt-action-economy {
+		display: flex;
+		justify-content: space-around;
+		padding: 6px;
+		font-size: 12px;
+		background: var(--wt-bg-alt);
+		border-radius: var(--wt-border-radius);
+
+		&__side {
+			text-align: center;
+		}
+
+		&__count {
+			font-size: 18px;
+			font-weight: 700;
+			color: var(--wt-text);
+		}
+
+		&__label {
+			font-size: 10px;
+			color: var(--wt-text-muted);
+			text-transform: uppercase;
+		}
+
+		&__vs {
+			display: flex;
+			align-items: center;
+			font-weight: 700;
+			color: var(--wt-text-muted);
+		}
+
+		&--warning &__count {
+			color: var(--wt-danger);
+		}
+	}
+
+	// Threat tags
+	.wt-threats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+
+		&__tag {
+			padding: 2px 8px;
+			font-size: 11px;
+			border-radius: 10px;
+			background: var(--wt-bg-alt);
+			color: var(--wt-text);
+			border: 1px solid var(--wt-border);
+
+			&--unaddressed {
+				border-color: var(--wt-danger);
+				color: var(--wt-danger);
+			}
+
+			&--addressed {
+				border-color: var(--wt-success);
+				color: var(--wt-success);
+			}
+		}
+	}
+
+	// Slot expenditure band
+	.wt-slot-band {
+		display: inline-block;
+		padding: 2px 8px;
+		font-size: 11px;
+		font-weight: 600;
+		border-radius: 3px;
+
+		&--low { background: rgba(74, 167, 90, 0.15); color: var(--wt-success); }
+		&--moderate { background: rgba(196, 155, 60, 0.15); color: var(--wt-warning); }
+		&--heavy { background: rgba(167, 74, 74, 0.15); color: var(--wt-danger); }
+		&--extreme { background: rgba(167, 74, 74, 0.3); color: var(--wt-danger); font-weight: 700; }
+	}
+
+	// ========================================================================
+	// Attrition view (multi-encounter)
+	// ========================================================================
+	.wt-attrition {
+		&__encounter {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 4px 0;
+			font-size: 12px;
+			color: var(--wt-text);
+
+			&--danger {
+				color: var(--wt-danger);
+				font-weight: 600;
+			}
+		}
+
+		&__arrow {
+			color: var(--wt-text-muted);
+		}
+
+		&__slots-preview {
+			display: flex;
+			gap: 2px;
+		}
+
+		&__mini-pip {
+			width: 8px;
+			height: 8px;
+			border-radius: 2px;
+
+			&--filled { background: var(--wt-pip-filled); }
+			&--empty { background: var(--wt-pip-empty); }
+		}
+	}
+
+	// ========================================================================
+	// DM panel
+	// ========================================================================
+	.wt-dm {
+		border-top: 2px solid var(--wt-accent);
+		margin-top: var(--wt-gap);
+		padding-top: var(--wt-pad);
+
+		&__title {
+			font-size: 13px;
+			font-weight: 700;
+			color: var(--wt-accent);
+			margin-bottom: 6px;
+		}
+
+		&__concentration {
+			font-size: 12px;
+			padding: 4px 8px;
+			background: rgba(74, 109, 167, 0.1);
+			border-radius: var(--wt-border-radius);
+			color: var(--wt-text);
+			margin-bottom: 4px;
+		}
+	}
+
+	// ========================================================================
+	// Live session: cast log
+	// ========================================================================
+	.wt-cast-log {
+		&__entry {
+			display: flex;
+			justify-content: space-between;
+			padding: 3px 0;
+			font-size: 12px;
+			color: var(--wt-text);
+			border-bottom: 1px solid var(--wt-border);
+
+			&:last-child {
+				border-bottom: none;
+			}
+		}
+
+		&__time {
+			font-size: 10px;
+			color: var(--wt-text-muted);
+		}
+	}
+
+	// Active concentration banner (live mode)
+	.wt-concentration-banner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 6px var(--wt-pad);
+		background: rgba(74, 109, 167, 0.12);
+		border: 1px solid var(--wt-accent);
+		border-radius: var(--wt-border-radius);
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--wt-accent);
+
+		&__dismiss {
+			background: none;
+			border: none;
+			color: var(--wt-danger);
+			cursor: pointer;
+			font-size: 14px;
+		}
+	}
+
+	// ========================================================================
+	// Persistence toolbar (export / import)
+	// ========================================================================
+	.wt-persist {
+		display: flex;
+		gap: 6px;
+		padding: var(--wt-pad);
+		border-top: 1px solid var(--wt-border);
+		flex-shrink: 0;
+
+		&__btn {
+			flex: 1;
+			padding: 4px 8px;
+			font-size: 12px;
+			border: 1px solid var(--wt-border);
+			border-radius: var(--wt-border-radius);
+			background: var(--wt-bg-alt);
+			color: var(--wt-text);
+			cursor: pointer;
+			transition: background 0.15s;
+
+			&:hover {
+				background: var(--wt-accent);
+				color: #fff;
+				border-color: var(--wt-accent);
+			}
+
+			&--danger:hover {
+				background: var(--wt-danger);
+				border-color: var(--wt-danger);
+			}
+		}
+	}
+
+	// ========================================================================
+	// Standalone page layout (war-table.html)
+	// ========================================================================
+	.wt-standalone {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		padding: 16px;
+		max-width: 1200px;
+		margin: 0 auto;
+		min-height: calc(100vh - 60px);
+
+		&__module {
+			display: flex;
+			flex-direction: column;
+			gap: var(--wt-gap);
+		}
+
+		&__module-title {
+			font-size: 18px;
+			font-weight: 700;
+			color: var(--wt-text);
+			padding-bottom: 6px;
+			border-bottom: 2px solid var(--wt-accent);
+			margin-bottom: 4px;
+		}
+	}
+
+	// ========================================================================
+	// Utility classes
+	// ========================================================================
+	.wt-btn {
+		padding: 4px 10px;
+		font-size: 12px;
+		border: 1px solid var(--wt-border);
+		border-radius: var(--wt-border-radius);
+		background: var(--wt-bg-alt);
+		color: var(--wt-text);
+		cursor: pointer;
+		transition: background 0.15s;
+
+		&:hover {
+			background: var(--wt-accent);
+			color: #fff;
+			border-color: var(--wt-accent);
+		}
+
+		&--primary {
+			background: var(--wt-accent);
+			color: #fff;
+			border-color: var(--wt-accent);
+
+			&:hover {
+				background: var(--wt-accent-light);
+				border-color: var(--wt-accent-light);
+			}
+		}
+
+		&--small {
+			padding: 2px 6px;
+			font-size: 11px;
+		}
+	}
+
+	.wt-text-muted {
+		color: var(--wt-text-muted);
+	}
+
+	.wt-text-danger {
+		color: var(--wt-danger);
+	}
+
+	.wt-text-success {
+		color: var(--wt-success);
+	}
+
+	.wt-text-warning {
+		color: var(--wt-warning);
+	}
+
+	// ========================================================================
+	// Responsive: collapse sidebar to full-width on narrow screens
+	// ========================================================================
+	@media (max-width: 768px) {
+		.wt-sidebar {
+			width: 100vw;
+		}
+
+		.wt-standalone {
+			grid-template-columns: 1fr;
+		}
+	}
+}
