@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!-- [PERSONAL] DH 2026-03-24 — War Table standalone page -->
+<html lang="en">
+
+<head>
+	<!--5ETOOLS_CMP-->
+	<meta charset="utf-8">
+	<meta name="description" content="War Table — Spell Loadout Planner & Encounter Forecast">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="mobile-web-app-capable" content="yes">
+
+	<title>War Table - 5etools</title>
+
+	<link rel="stylesheet" href="css/bootstrap.css">
+	<link rel="stylesheet" href="css/main.css">
+
+	<!-- Favicons -->
+	<link rel="icon" type="image/svg+xml" href="favicon.svg">
+	<link rel="icon" type="image/png" sizes="256x256" href="favicon-256x256.png">
+	<link rel="icon" type="image/png" sizes="144x144" href="favicon-144x144.png">
+	<link rel="icon" type="image/png" sizes="128x128" href="favicon-128x128.png">
+	<link rel="icon" type="image/png" sizes="64x64" href="favicon-64x64.png">
+	<link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+
+	<!-- Chrome Web App Icons -->
+	<link rel="manifest" href="manifest.webmanifest">
+	<meta name="application-name" content="5etools">
+	<meta name="theme-color" content="#006bc4">
+
+	<!-- Windows Start Menu tiles -->
+	<meta name="msapplication-config" content="browserconfig.xml"/>
+	<meta name="msapplication-TileColor" content="#006bc4">
+
+	<!-- Apple Touch Icons -->
+	<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png">
+	<link rel="apple-touch-icon" sizes="360x360" href="apple-touch-icon-360x360.png">
+	<link rel="apple-touch-icon" sizes="167x167" href="apple-touch-icon-167x167.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="apple-touch-icon-120x120.png">
+	<meta name="apple-mobile-web-app-title" content="5etools">
+
+	<!-- macOS Safari Pinned Tab and Touch Bar -->
+	<link rel="mask-icon" href="safari-pinned-tab.svg" color="#006bc4">
+
+	<!-- OpenSearch -->
+	<link rel="search" href="open-search.xml" title="Search 5etools" type="application/opensearchdescription+xml">
+
+	<script type="text/javascript" src="sw-injector.js"></script>
+
+	<script blocking="render" type="module" src="js/styleswitch.js"></script>
+	<script type="text/javascript" src="js/navigation.js"></script>
+	<script type="module" src="js/browsercheck.js"></script>
+</head>
+
+<body>
+
+<div class="overlay-noise no-print"></div>
+
+<div class="viewport-wrapper">
+	<nav class="container page__nav" id="navigation">
+		<ul class="nav nav-pills page__nav-inner" id="navbar"></ul>
+	</nav>
+
+	<div class="container">
+		<header class="page__header">
+			<div class="ve-flex-v-baseline">
+				<h1 class="page__title ve-no-wrap ve-my-0">War Table</h1>
+				<p class="page__subtitle ve-no-wrap ve-my-0">Spell Loadout Planner & Encounter Forecast</p>
+			</div>
+		</header>
+
+		<!-- Mode toggle + persistence toolbar -->
+		<div class="wt-header" id="wt-header">
+			<div class="wt-header__controls">
+				<div class="wt-mode-toggle" id="wt-mode-toggle">
+					<button class="wt-mode-toggle__btn wt-mode-toggle__btn--active" data-mode="planning">Planning</button>
+					<button class="wt-mode-toggle__btn" data-mode="live">Live</button>
+				</div>
+			</div>
+			<div class="wt-persist" id="wt-persist">
+				<button class="wt-persist__btn" id="wt-export">Export</button>
+				<button class="wt-persist__btn" id="wt-import">Import</button>
+				<button class="wt-persist__btn wt-persist__btn--danger" id="wt-reset">Reset</button>
+			</div>
+		</div>
+
+		<!-- Two-column standalone layout -->
+		<div class="wt-standalone" id="wt-standalone">
+			<div class="wt-standalone__module" id="wt-planner-col">
+				<div class="wt-standalone__module-title">Spell Loadout Planner</div>
+				<div id="wt-planner-root"></div>
+			</div>
+			<div class="wt-standalone__module" id="wt-forecast-col">
+				<div class="wt-standalone__module-title">Encounter Forecast</div>
+				<div id="wt-forecast-root"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Core scripts (same load order as other pages) -->
+<script type="text/javascript" src="js/parser.js"></script>
+<script type="text/javascript" src="js/utils.js"></script>
+<script type="text/javascript" src="js/utils-ui.js"></script>
+<script type="text/javascript" src="lib/localforage.js"></script>
+<script type="text/javascript" src="js/omnidexer.js"></script>
+<script type="module" src="js/filter.js"></script>
+<script type="module" src="js/omnisearch.js"></script>
+<script type="text/javascript" src="js/utils-dataloader.js"></script>
+<script type="module" src="js/utils-brew.js"></script>
+<script type="text/javascript" src="js/render.js"></script>
+
+<!-- War Table modules -->
+<script type="text/javascript" src="js/war-table.js"></script>
+<script type="text/javascript" src="js/war-table-planner.js"></script>
+<script type="text/javascript" src="js/war-table-forecast.js"></script>
+
+<!-- Page bootstrap -->
+<script type="text/javascript">
+// [PERSONAL] DH 2026-03-24 — War Table page bootstrap
+(async () => {
+	// Wait for navigation to initialize
+	await new Promise(resolve => {
+		if (typeof Navigation !== "undefined" && Navigation.init) {
+			Navigation.init();
+		}
+		// Give navigation time to render
+		setTimeout(resolve, 50);
+	});
+
+	// Initialize shared state
+	const state = WarTableState.getInstance();
+
+	// -- Mode toggle --
+	const modeToggle = document.getElementById("wt-mode-toggle");
+	if (modeToggle) {
+		const updateToggle = () => {
+			modeToggle.querySelectorAll("[data-mode]").forEach(btn => {
+				btn.classList.toggle("wt-mode-toggle__btn--active", btn.dataset.mode === state.getMode());
+			});
+		};
+
+		modeToggle.querySelectorAll("[data-mode]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				state.setMode(btn.dataset.mode);
+				updateToggle();
+			});
+		});
+
+		state.on("modeChange", updateToggle);
+		updateToggle();
+	}
+
+	// -- Persistence toolbar --
+	document.getElementById("wt-export")?.addEventListener("click", () => {
+		const json = state.exportJSON();
+		const blob = new Blob([json], {type: "application/json"});
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `war-table-${new Date().toISOString().slice(0, 10)}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+	});
+
+	document.getElementById("wt-import")?.addEventListener("click", () => {
+		const input = document.createElement("input");
+		input.type = "file";
+		input.accept = ".json";
+		input.addEventListener("change", async () => {
+			const file = input.files?.[0];
+			if (!file) return;
+			try {
+				const text = await file.text();
+				const ok = state.importJSON(text);
+				if (!ok) alert("Failed to import. Check the file format.");
+			} catch (e) {
+				console.error("War Table: import error", e);
+				alert("Failed to read file.");
+			}
+		});
+		input.click();
+	});
+
+	document.getElementById("wt-reset")?.addEventListener("click", () => {
+		if (confirm("Reset all War Table data? This cannot be undone.")) {
+			state.resetState();
+		}
+	});
+
+	// -- Initialize modules --
+	const planner = new WarTablePlanner({state});
+	const forecast = new WarTableForecast({state});
+
+	await planner.pInit();
+
+	planner.renderTo(document.getElementById("wt-planner-root"));
+	forecast.renderTo(document.getElementById("wt-forecast-root"));
+})();
+</script>
+
+</body>
+</html>
