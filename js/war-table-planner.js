@@ -88,6 +88,10 @@ globalThis.WarTablePlanner = class {
 		this._$wrpPrepared = this._renderPreparedSection();
 		$wrp.appendChild(this._$wrpPrepared);
 
+		// Slot resource bar section
+		this._$wrpSlots = this._renderSlotSection();
+		$wrp.appendChild(this._$wrpSlots);
+
 		$parent.appendChild($wrp);
 
 		// Listen for state changes
@@ -103,6 +107,18 @@ globalThis.WarTablePlanner = class {
 			this._updatePreparedDisplay();
 		});
 
+		this._state.on("slotsChange", () => {
+			this._updateSlotDisplay();
+		});
+
+		this._state.on("abeyanceChange", () => {
+			this._updateSlotDisplay();
+		});
+
+		this._state.on("modeChange", () => {
+			this._updateSlotDisplay();
+		});
+
 		this._state.on("stateChange", () => {
 			this._filterSpellsByClass();
 			this._updateAll();
@@ -113,6 +129,7 @@ globalThis.WarTablePlanner = class {
 		this._updateProfileDisplay();
 		this._updateSpellListDisplay();
 		this._updatePreparedDisplay();
+		this._updateSlotDisplay();
 	}
 
 	// -- Character Profile ---------------------------------------------------
@@ -371,6 +388,135 @@ globalThis.WarTablePlanner = class {
 						this._state.removePreparedSpell(row.dataset.prepName, row.dataset.prepSource);
 					});
 				});
+			}
+		}
+	}
+
+	// -- Slot Resource Bar ----------------------------------------------------
+	_renderSlotSection () {
+		const section = this._makeSection("Spell Slots", true);
+		const content = section.querySelector(".wt-section__content");
+
+		const slotsWrp = document.createElement("div");
+		slotsWrp.className = "wt-slots";
+		slotsWrp.dataset.slotsContainer = "";
+		content.appendChild(slotsWrp);
+
+		// Arcane Abeyance bead indicator
+		const abeyanceWrp = document.createElement("div");
+		abeyanceWrp.className = "wt-slots__abeyance";
+		abeyanceWrp.dataset.abeyanceContainer = "";
+		abeyanceWrp.style.display = "none";
+		content.appendChild(abeyanceWrp);
+
+		// Restore all button
+		const restoreBtn = document.createElement("button");
+		restoreBtn.className = "wt-btn wt-btn--small";
+		restoreBtn.textContent = "Long Rest (Restore All)";
+		restoreBtn.style.marginTop = "8px";
+		restoreBtn.addEventListener("click", () => {
+			this._state.restoreAllSlots();
+		});
+		content.appendChild(restoreBtn);
+
+		this._updateSlotDisplay(content);
+
+		return section;
+	}
+
+	_updateSlotDisplay (container) {
+		const root = container || this._$wrpSlots?.querySelector(".wt-section__content");
+		if (!root) return;
+
+		const slots = this._state.getSpellSlots();
+		const mode = this._state.getMode();
+		const isLive = mode === "live";
+		const abeyance = this._state.getArcaneAbeyance();
+		const features = this._state.getCharacter().features;
+
+		const slotsContainer = root.querySelector("[data-slots-container]");
+		if (slotsContainer) {
+			slotsContainer.className = `wt-slots ${isLive ? "wt-slots--live" : ""}`;
+
+			const rows = [];
+			for (let lvl = 0; lvl < 9; lvl++) {
+				const max = slots.max[lvl];
+				if (max === 0) continue;
+
+				const current = slots.current[lvl];
+				const pips = [];
+
+				for (let p = 0; p < max; p++) {
+					const isFilled = p < current;
+					const pipClass = isFilled ? "wt-slots__pip--filled" : "wt-slots__pip--expended";
+					pips.push(
+						`<div class="wt-slots__pip ${pipClass}"
+							data-slot-level="${lvl}"
+							data-slot-pip="${p}"
+							title="Level ${lvl + 1} slot ${p + 1}/${max}${isLive ? " (click: expend, right-click: restore)" : ""}">
+						</div>`,
+					);
+				}
+
+				rows.push(`
+					<div class="wt-slots__row">
+						<span class="wt-slots__label">${lvl + 1}</span>
+						<div class="wt-slots__pips">${pips.join("")}</div>
+						<span class="wt-text-muted" style="font-size:10px">${current}/${max}</span>
+					</div>
+				`);
+			}
+
+			if (rows.length === 0) {
+				slotsContainer.innerHTML = `<div class="wt-prepared__empty">No spell slots at this level.</div>`;
+			} else {
+				slotsContainer.innerHTML = rows.join("");
+			}
+
+			// Bind pip click events in live mode
+			if (isLive) {
+				slotsContainer.querySelectorAll(".wt-slots__pip").forEach(pip => {
+					const lvl = parseInt(pip.dataset.slotLevel, 10);
+
+					// Left click: expend
+					pip.addEventListener("click", (e) => {
+						e.preventDefault();
+						this._state.expendSlot(lvl);
+					});
+
+					// Right click: restore
+					pip.addEventListener("contextmenu", (e) => {
+						e.preventDefault();
+						this._state.restoreSlot(lvl);
+					});
+				});
+			}
+		}
+
+		// Arcane Abeyance bead
+		const abeyanceContainer = root.querySelector("[data-abeyance-container]");
+		if (abeyanceContainer) {
+			if (features.arcaneAbeyance) {
+				abeyanceContainer.style.display = "";
+				const storedSpell = abeyance.storedSpell;
+
+				if (storedSpell) {
+					abeyanceContainer.innerHTML = `
+						<span class="wt-slots__abeyance-label">Abeyance Bead:</span>
+						<span>${this._escHtml(storedSpell.name)} (L${storedSpell.level})</span>
+						<button class="wt-btn wt-btn--small" data-clear-abeyance title="Release stored spell">Release</button>
+					`;
+					abeyanceContainer.querySelector("[data-clear-abeyance]")?.addEventListener("click", () => {
+						this._state.setArcaneAbeyance(null);
+					});
+				} else {
+					abeyanceContainer.innerHTML = `
+						<span class="wt-slots__abeyance-label">Abeyance Bead:</span>
+						<span class="wt-text-muted">Empty &mdash; store a level 1-4 spell</span>
+					`;
+				}
+			} else {
+				abeyanceContainer.style.display = "none";
 			}
 		}
 	}
