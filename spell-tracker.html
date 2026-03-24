@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+	<title>Spell Tracker - 5etools</title>
+
+	<link rel="stylesheet" href="css/bootstrap.css">
+	<link rel="stylesheet" href="css/main.css">
+
+	<link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+	<script blocking="render" type="module" src="js/styleswitch.js"></script>
+	<script type="text/javascript" src="js/navigation.js"></script>
+
+	<style>
+		/* ── Spell Tracker layout ── */
+		.st-layout {
+			display: flex;
+			height: calc(100vh - 90px);
+			gap: 8px;
+			padding: 8px;
+			overflow: hidden;
+		}
+
+		/* Left panel: spell browser */
+		.st-panel-left {
+			display: flex;
+			flex-direction: column;
+			flex: 0 0 320px;
+			min-width: 0;
+			border: 1px solid var(--rgb-border--statblock, #e69a28);
+			border-radius: 4px;
+			padding: 8px;
+			overflow: hidden;
+		}
+
+		.st-spell-list {
+			flex: 1;
+			overflow-y: auto;
+			border: 1px solid #ddd;
+			border-radius: 3px;
+			margin-top: 4px;
+		}
+
+		.st-spell-row {
+			display: flex;
+			align-items: center;
+			padding: 3px 6px;
+			cursor: pointer;
+			border-bottom: 1px solid rgba(0,0,0,0.05);
+			font-size: 13px;
+			user-select: none;
+		}
+		.st-spell-row:hover { background: rgba(0,0,0,0.05); }
+		.st-spell-row--prepared { background: rgba(0, 107, 196, 0.10); }
+		.st-spell-row--prepared:hover { background: rgba(0, 107, 196, 0.18); }
+
+		.st-spell-row__lvl {
+			flex: 0 0 20px;
+			text-align: center;
+			font-weight: bold;
+			font-size: 11px;
+			margin-right: 6px;
+		}
+		.st-spell-row__name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.st-spell-row__src { flex: 0 0 40px; text-align: right; font-size: 11px; opacity: 0.55; }
+
+		/* Right panel */
+		.st-panel-right {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			min-width: 0;
+			overflow: hidden;
+		}
+
+		/* Slot tracker */
+		.st-slots {
+			border: 1px solid var(--rgb-border--statblock, #e69a28);
+			border-radius: 4px;
+			padding: 8px;
+			flex: 0 0 auto;
+		}
+
+		.st-slot-row {
+			display: flex;
+			align-items: center;
+			margin-bottom: 4px;
+			font-size: 13px;
+		}
+		.st-slot-row__label { flex: 0 0 52px; font-weight: 600; font-size: 12px; }
+		.st-slot-row__adj { display: flex; align-items: center; flex: 0 0 80px; }
+		.st-slot-row__pips { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+
+		.st-pip {
+			width: 18px;
+			height: 18px;
+			border-radius: 50%;
+			border: 2px solid #006bc4;
+			cursor: pointer;
+			padding: 0;
+			transition: background 0.1s;
+		}
+		.st-pip--avail { background: #006bc4; }
+		.st-pip--used  { background: transparent; }
+		.st-pip:hover  { opacity: 0.7; }
+
+		/* Prepared list */
+		.st-prepared {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			border: 1px solid var(--rgb-border--statblock, #e69a28);
+			border-radius: 4px;
+			padding: 8px;
+			overflow: hidden;
+		}
+
+		.st-prepared-list {
+			flex: 1;
+			overflow-y: auto;
+		}
+
+		.st-prepared-level-header {
+			font-size: 11px;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			opacity: 0.6;
+			margin: 8px 0 3px;
+			padding-bottom: 2px;
+			border-bottom: 1px solid rgba(0,0,0,0.1);
+		}
+
+		.st-prepared-row {
+			display: flex;
+			align-items: center;
+			padding: 3px 4px;
+			font-size: 13px;
+			border-radius: 3px;
+		}
+		.st-prepared-row:hover { background: rgba(0,0,0,0.04); }
+		.st-prepared-row--cast { opacity: 0.5; }
+		.st-prepared-row__name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.st-prepared-row__name--cast { text-decoration: line-through; }
+		.st-prepared-row__src { flex: 0 0 36px; text-align: right; font-size: 11px; opacity: 0.5; }
+	</style>
+</head>
+
+<body>
+
+<div class="overlay-noise no-print"></div>
+
+<div class="viewport-wrapper">
+	<header class="hidden-xs hidden-sm page__header">
+		<div class="container ve-flex-v-baseline">
+			<h1 class="page__title ve-no-wrap ve-my-0">Spell Tracker</h1>
+			<p class="page__subtitle ve-no-wrap ve-my-0">Prepare spells on the left. Track slots and cast status on the right.</p>
+		</div>
+	</header>
+
+	<nav class="container page__nav" id="navigation">
+		<ul class="nav nav-pills page__nav-inner" id="navbar"></ul>
+	</nav>
+
+	<div class="container st-layout">
+		<!-- Left: spell browser -->
+		<div class="st-panel-left" id="st-left">
+			<div class="ve-flex-vh-center ve-p-4"><i>Loading spells…</i></div>
+		</div>
+
+		<!-- Right: slots + prepared -->
+		<div class="st-panel-right">
+			<div class="st-slots" id="st-slots">
+				<b>Spell Slots</b>
+			</div>
+			<div class="st-prepared" id="st-prepared">
+				<b>Prepared Spells</b>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript" defer src="js/parser.js"></script>
+<script type="text/javascript" defer src="js/utils.js"></script>
+<script type="text/javascript" defer src="js/utils-ui.js"></script>
+<script type="text/javascript" defer src="lib/localforage.js"></script>
+<script type="module" defer src="js/omnidexer.js"></script>
+<script type="module" src="js/utils-font.js"></script>
+<script type="module" src="js/utils-brew.js"></script>
+<script type="module" src="js/utils-config.js"></script>
+<script type="text/javascript" defer src="js/utils-dataloader.js"></script>
+<script type="module" src="js/shim-esmodules.js"></script>
+<script type="module" src="js/spell-tracker.js"></script>
+
+</body>
+</html>
