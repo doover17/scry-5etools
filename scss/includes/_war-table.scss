@@ -734,11 +734,20 @@
 
 	// Slot expenditure band
 	.wt-slot-band {
-		display: inline-block;
-		padding: 2px 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 6px 10px;
 		font-size: 11px;
 		font-weight: 600;
-		border-radius: 3px;
+		border-radius: var(--wt-border-radius);
+		margin-bottom: 8px;
+
+		&__detail {
+			font-weight: 400;
+			font-size: 10px;
+			opacity: 0.8;
+		}
 
 		&--low { background: rgba(74, 167, 90, 0.15); color: var(--wt-success); }
 		&--moderate { background: rgba(196, 155, 60, 0.15); color: var(--wt-warning); }
@@ -747,9 +756,45 @@
 	}
 
 	// ========================================================================
+	// Encounter list
+	// ========================================================================
+	.wt-encounter-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wt-gap);
+		margin-top: 8px;
+	}
+
+	.wt-encounter__monster-name {
+		flex: 1;
+		padding: 2px 6px;
+		font-size: 12px;
+		border: 1px solid var(--wt-border);
+		border-radius: var(--wt-border-radius);
+		background: var(--wt-bg);
+		color: var(--wt-text);
+	}
+
+	.wt-encounter__monster-remove {
+		background: none;
+		border: none;
+		color: var(--wt-danger);
+		cursor: pointer;
+		font-size: 14px;
+		padding: 0 2px;
+		line-height: 1;
+	}
+
+	// ========================================================================
 	// Attrition view (multi-encounter)
 	// ========================================================================
 	.wt-attrition {
+		&__timeline {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+
 		&__encounter {
 			display: flex;
 			align-items: center;
@@ -757,11 +802,30 @@
 			padding: 4px 0;
 			font-size: 12px;
 			color: var(--wt-text);
+			border-bottom: 1px solid var(--wt-border);
+
+			&:last-child {
+				border-bottom: none;
+			}
 
 			&--danger {
 				color: var(--wt-danger);
 				font-weight: 600;
 			}
+		}
+
+		&__encounter-label {
+			min-width: 90px;
+			font-size: 11px;
+			flex-shrink: 0;
+		}
+
+		&__count {
+			font-size: 10px;
+			color: var(--wt-text-muted);
+			min-width: 36px;
+			text-align: right;
+			flex-shrink: 0;
 		}
 
 		&__arrow {
@@ -770,16 +834,84 @@
 
 		&__slots-preview {
 			display: flex;
-			gap: 2px;
+			gap: 3px;
+			flex-wrap: wrap;
+		}
+
+		&__mini-pip-group {
+			display: flex;
+			gap: 1px;
 		}
 
 		&__mini-pip {
+			display: inline-block;
 			width: 8px;
 			height: 8px;
 			border-radius: 2px;
 
 			&--filled { background: var(--wt-pip-filled); }
 			&--empty { background: var(--wt-pip-empty); }
+			&--expended { background: var(--wt-pip-expended); border: 1px dashed var(--wt-border); }
+		}
+	}
+
+	// ========================================================================
+	// Action economy encounter blocks
+	// ========================================================================
+	.wt-action-economy {
+		&__encounter {
+			border: 1px solid var(--wt-border);
+			border-radius: var(--wt-border-radius);
+			padding: 8px;
+			margin-bottom: 6px;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+		}
+
+		&__title {
+			font-size: 12px;
+			font-weight: 600;
+			color: var(--wt-text);
+			margin-bottom: 4px;
+		}
+
+		&__comparison {
+			display: flex;
+			align-items: center;
+			justify-content: space-around;
+			padding: 4px 0;
+		}
+
+		&__side-label {
+			display: block;
+			font-size: 10px;
+			text-transform: uppercase;
+			color: var(--wt-text-muted);
+		}
+
+		&__side-count {
+			font-size: 13px;
+			font-weight: 600;
+		}
+
+		&__ratio {
+			font-size: 11px;
+			color: var(--wt-text-muted);
+			text-align: center;
+		}
+
+		&__assess {
+			font-size: 11px;
+			font-weight: 600;
+			text-align: center;
+			padding: 2px 0;
+
+			&--favorable { color: var(--wt-success); }
+			&--neutral { color: var(--wt-text-muted); }
+			&--unfavorable { color: var(--wt-warning); }
+			&--dangerous { color: var(--wt-danger); }
 		}
 	}
 
